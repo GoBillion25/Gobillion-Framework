@@ -10,7 +10,7 @@ from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-from oldtemplates import css, bot_template, user_template
+from htmlTemplates import css, bot_template, user_template
 from langchain.llms import HuggingFaceHub
 
 def get_pdf_text(pdf_docs):
@@ -64,6 +64,7 @@ def get_conversation_chain(vectorstore):
     return conversation_chain
 
 def main():
+    print(tiktoken.__version__)
     load_dotenv()
     st.set_page_config(page_title="Chat with Own Documents", page_icon=":books:")
   
