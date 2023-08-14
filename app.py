@@ -12,6 +12,33 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
 from langchain.llms import HuggingFaceHub
+import requests
+from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
+
+
+def get_webpage_text(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        paragraphs = soup.find_all('p')
+        text = "\n".join([paragraph.get_text() for paragraph in paragraphs])
+        return text
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching data from URL: {e}")
+        return ""
+
+def get_urls_from_sitemap(sitemap_url):
+    try:
+        response = requests.get(sitemap_url)
+        response.raise_for_status()
+        root = ET.fromstring(response.content)
+        urls = [url.text for url in root.findall(".//{http://www.sitemaps.org/schemas/sitemap/0.9}loc")]
+        return urls
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching sitemap: {e}")
+        return []
 
 def get_pdf_text(pdf_docs):
     text = ""
@@ -94,16 +121,69 @@ def main():
                 st.error("Please process documents first.")
             
     with st.sidebar:
-        st.subheader("Your documents")
-        uploaded_files = st.file_uploader(
-            "Upload your PDF,Txt,Doc here and click on 'Process'", accept_multiple_files=True)
-        if st.button("Process"):
-            with st.spinner("Processing"):
-                raw_text = get_file_text(uploaded_files)
-                text_chunks = get_text_chunks(raw_text)
-                vectorstore = get_vectorstore(text_chunks)
-                st.session_state.conversation = get_conversation_chain(
-                    vectorstore)
+        st.subheader("Select data source")
+       # data_source = st.radio("Choose data source:", ("Uploaded Files", "Website URLs","Combined" ,"Sitemap URLs"))
+        data_source = st.radio("Choose data source:", ("Uploaded Files", "Website URLs", ))
+        if data_source == "Uploaded Files":
+            uploaded_files = st.file_uploader(
+                "Upload your PDF, Txt, Doc files here and click on 'Process'", accept_multiple_files=True)
+            if st.button("Process"):
+                with st.spinner("Processing"):
+                    raw_text = get_file_text(uploaded_files)
+                    text_chunks = get_text_chunks(raw_text)
+                    vectorstore = get_vectorstore(text_chunks)
+                    st.session_state.conversation = get_conversation_chain(
+                        vectorstore)
+        elif data_source == "Website URLs":
+            urls = st.text_area("Enter website URLs (one per line):")
+            url_list = urls.split("\n")
+            if st.button("Process"):
+                with st.spinner("Processing"):
+                    all_text = ""
+                    for url in url_list:
+                        raw_text = get_webpage_text(url)
+                        all_text += raw_text + "\n\n"
+                    text_chunks = get_text_chunks(all_text)
+                    vectorstore = get_vectorstore(text_chunks)
+                    st.session_state.conversation = get_conversation_chain(vectorstore)
+        elif data_source == "Sitemap URLs":
+            sitemap_url = st.text_input("Enter the URL of the sitemap.xml:")
+            if st.button("Process"):
+                with st.spinner("Processing"):
+                    urls_from_sitemap = get_urls_from_sitemap(sitemap_url)
+                    all_text = ""
+                    for url in urls_from_sitemap:
+                        raw_text = get_webpage_text(url)
+                        all_text += raw_text + "\n\n"
+                    text_chunks = get_text_chunks(all_text)
+                    vectorstore = get_vectorstore(text_chunks)
+                    st.session_state.conversation = get_conversation_chain(vectorstore)
+        elif data_source == "Combined":
+            uploaded_files = st.file_uploader(
+                "Upload your PDF, Txt, Doc files here", accept_multiple_files=True)
+            urls = st.text_area("Enter website URLs (one per line):")
+            sitemap_url = st.text_input("Enter the URL of the sitemap.xml:")
+            if st.button("Process"):
+                with st.spinner("Processing"):
+                    all_text = ""
+                    # Process uploaded files
+                    for uploaded_file in uploaded_files:
+                        # Process each uploaded file here
+                        pass
+                    # Process website URLs
+                    url_list = urls.split("\n")
+                    for url in url_list:
+                        raw_text = get_webpage_text(url)
+                        all_text += raw_text + "\n\n"
+                    # Process sitemap URLs
+                    urls_from_sitemap = get_urls_from_sitemap(sitemap_url)
+                    for url in urls_from_sitemap:
+                        raw_text = get_webpage_text(url)
+                        all_text += raw_text + "\n\n"
+                    text_chunks = get_text_chunks(all_text)
+                    vectorstore = get_vectorstore(text_chunks)
+                    st.session_state.conversation = get_conversation_chain(vectorstore)
+
 
 if __name__ == '__main__':
     main()
