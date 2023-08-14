@@ -64,10 +64,10 @@ def get_conversation_chain(vectorstore):
     return conversation_chain
 
 def main():
-    print(tiktoken.__version__)
+    
     load_dotenv()
     st.set_page_config(page_title="Chat with Own Documents", page_icon=":books:")
-  
+    
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
