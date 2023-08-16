@@ -16,7 +16,10 @@ import requests
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 
-
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Replace with your React app's development domain
+    "https://your-react-domain.com",  # Replace with your React app's production domain
+]
 def get_webpage_text(url):
     try:
         response = requests.get(url)
@@ -47,6 +50,9 @@ def get_pdf_text(pdf_docs):
         for page in pdf_reader.pages:
             text += page.extract_text()
     return text
+
+def is_allowed_origin(origin):
+    return origin in ALLOWED_ORIGINS
 
 def get_file_text(files):
     text = ""
@@ -89,25 +95,24 @@ def get_conversation_chain(vectorstore):
         memory=memory
     )
     return conversation_chain
-def set_cors_headers():
-    header = f"http://localhost:8501"
-    st.write(
-        f'<iframe src="{header}" width="80%" height="80%"></iframe>',
-        unsafe_allow_html=True,
-    )
-def embed_streamlit_app(url, width="80%", height="800px"):
-    iframe_code = f'<iframe src="{url}" width="{width}" height="{height}"></iframe>'
-    st.write(iframe_code, unsafe_allow_html=True)
+
+
+
 def main():
     
+   
+    # Disable CORS
+    #st.set_option("server.enableCORS", False)
+
+    # Configure Streamlit's CORS settings
+    # st.set_option("server.enableCORS", True)
+    # st.set_option("server.allowWebsocketCompression", False)
+    # st.set_option("server.websocketOriginCheck", is_allowed_origin)
+
+
     load_dotenv()
    
     st.set_page_config(page_title="Chat with Own Documents", page_icon=":books:")
-    #streamlit_app_url = "http://localhost:8501/"
-
-    # Call the function to embed the Streamlit app
-    #embed_streamlit_app(streamlit_app_url)
-
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
