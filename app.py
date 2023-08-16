@@ -89,12 +89,24 @@ def get_conversation_chain(vectorstore):
         memory=memory
     )
     return conversation_chain
-
+def set_cors_headers():
+    header = f"http://localhost:8501"
+    st.write(
+        f'<iframe src="{header}" width="80%" height="80%"></iframe>',
+        unsafe_allow_html=True,
+    )
+def embed_streamlit_app(url, width="80%", height="800px"):
+    iframe_code = f'<iframe src="{url}" width="{width}" height="{height}"></iframe>'
+    st.write(iframe_code, unsafe_allow_html=True)
 def main():
     
     load_dotenv()
+   
     st.set_page_config(page_title="Chat with Own Documents", page_icon=":books:")
-    
+    #streamlit_app_url = "http://localhost:8501/"
+
+    # Call the function to embed the Streamlit app
+    #embed_streamlit_app(streamlit_app_url)
 
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
@@ -183,7 +195,8 @@ def main():
                     text_chunks = get_text_chunks(all_text)
                     vectorstore = get_vectorstore(text_chunks)
                     st.session_state.conversation = get_conversation_chain(vectorstore)
-
+    
 
 if __name__ == '__main__':
+    
     main()
