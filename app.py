@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 import docx
 import csv
-from io import StringIO
+import io
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
@@ -68,8 +68,20 @@ def get_file_text(files):
                 text += para.text + "\n"
         elif file_extension == 'txt':
             text += file.getvalue().decode("utf-8") + "\n"
+        elif file_extension == 'csv':
+            csv_text = get_csv_text([file])
+            text += csv_text
     return text
 
+
+def get_csv_text(csv_files):
+    text = ""
+    for csv_file in csv_files:
+        csv_content = csv_file.getvalue().decode("utf-8")
+        csv_reader = csv.reader(io.StringIO(csv_content))
+        for row in csv_reader:
+            text += ','.join(row) + "\n"
+    return text
 def get_text_chunks(text):
     text_splitter = CharacterTextSplitter(
         separator="\n",
